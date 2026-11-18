@@ -4,11 +4,15 @@ Project: Vehicle Transportation Unit Rate Prediction (L&T)
 Target (Y): Vehicle_Unit_Rate
 """
 
+import os
 import pandas as pd
 import numpy as np
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# Ensure working directory is the script directory
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 sns.set_theme(style="whitegrid")
 
@@ -60,7 +64,20 @@ if hasattr(champion_model, "feature_importances_"):
 else:
     top_features = None
 
-# 5. Visual Model Comparison Plots
+# 5. Extract and Export Regression Coefficients (Ridge Model)
+print("\n--- Regression Feature Coefficients (Ridge Model) ---")
+if "Ridge Regression" in trained_models:
+    ridge_step = trained_models["Ridge Regression"].named_steps["regressor"]
+    coef_df = pd.DataFrame({
+        "Feature": X_train.columns,
+        "Coefficient": ridge_step.coef_.round(2)
+    }).sort_values(by="Coefficient", ascending=False)
+    
+    print(coef_df.to_string(index=False))
+    coef_df.to_csv("model_coefficients.csv", index=False)
+    print("✓ All feature coefficients saved to: 'model_coefficients.csv'")
+
+# 6. Visual Model Comparison Plots
 fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
 # Left Plot: Test R² vs MAE Benchmark
