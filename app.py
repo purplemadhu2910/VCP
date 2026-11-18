@@ -10,6 +10,7 @@ Layout: 60% Enterprise Input & Quotation Form | 40% Interactive Route Map
 """
 
 import os
+import math
 import hashlib
 from datetime import date, datetime
 import streamlit as st
@@ -249,7 +250,57 @@ CITY_COORDINATES = {
     "Rajkot": (22.3039, 70.8022),
     "Surat": (21.1702, 72.8311),
     "Vadodara": (22.3072, 73.1812),
-    "Visakhapatnam": (17.6868, 83.2185)
+    "Visakhapatnam": (17.6868, 83.2185),
+    "Kanpur": (26.4499, 80.3319),
+    "Agra": (27.1767, 78.0081),
+    "Varanasi": (25.3176, 82.9739),
+    "Meerut": (28.9845, 77.7064),
+    "Nashik": (19.9975, 73.7898),
+    "Aurangabad": (19.8762, 75.3433),
+    "Solapur": (17.6599, 75.9064),
+    "Amritsar": (31.6340, 74.8723),
+    "Jalandhar": (31.3260, 75.5762),
+    "Jodhpur": (26.2389, 73.0243),
+    "Udaipur": (24.5854, 73.7125),
+    "Kota": (25.2138, 75.8648),
+    "Gwalior": (26.2183, 78.1828),
+    "Jabalpur": (23.1815, 79.9864),
+    "Raipur": (21.2514, 81.6296),
+    "Bhubaneswar": (20.2961, 85.8245),
+    "Cuttack": (20.4625, 85.8828),
+    "Ranchi": (23.3441, 85.3096),
+    "Jamshedpur": (22.8046, 86.2029),
+    "Guwahati": (26.1445, 91.7362),
+    "Dehradun": (30.3165, 78.0322),
+    "Mysore": (12.2958, 76.6394),
+    "Hubli": (15.3647, 75.1240),
+    "Mangalore": (12.9141, 74.8560),
+    "Kochi": (9.9312, 76.2673),
+    "Thiruvananthapuram": (8.5241, 76.9366),
+    "Kozhikode": (11.2588, 75.7804),
+    "Madurai": (9.9252, 78.1198),
+    "Tiruchirappalli": (10.7905, 78.7047),
+    "Salem": (11.6643, 78.1460),
+    "Vijayawada": (16.5062, 80.6480),
+    "Guntur": (16.3067, 80.4365),
+    "Warangal": (17.9689, 79.5941),
+    "Tirupati": (13.6288, 79.4192),
+    "Noida": (28.5355, 77.3910),
+    "Gurgaon": (28.4595, 77.0266),
+    "Ghaziabad": (28.6692, 77.4538),
+    "Faridabad": (28.4089, 77.3178),
+    "Navi Mumbai": (19.0330, 73.0297),
+    "Thane": (19.2183, 72.9781),
+    "Gandhinagar": (23.2156, 72.6369),
+    "Bhavnagar": (21.7645, 72.1519),
+    "Jamnagar": (22.4707, 70.0577),
+    "Junagadh": (21.5222, 70.4579),
+    "Anand": (22.5645, 72.9289),
+    "Bharuch": (21.7051, 72.9959),
+    "Vapi": (20.3893, 72.9106),
+    "Valsad": (20.5992, 72.9342),
+    "Silvassa": (20.2763, 73.0083),
+    "Daman": (20.3974, 72.8328)
 }
 
 MAJOR_INDIAN_CITIES = sorted(list(CITY_COORDINATES.keys()))
@@ -285,6 +336,53 @@ DEFAULT_CITY_DISTANCES = {
     ("Surat", "Vadodara"): 155.0
 }
 
+def resolve_city_coords(query):
+    """Case-insensitive and substring lookup for city GPS coordinates."""
+    if not query or not isinstance(query, str):
+        return None
+    q = query.strip().lower()
+    for c, coords in CITY_COORDINATES.items():
+        if c.lower() == q:
+            return coords
+    for c, coords in CITY_COORDINATES.items():
+        if c.lower() in q or q in c.lower():
+            return coords
+    return None
+
+def haversine_distance(coord1, coord2):
+    """Calculates aerial great-circle distance between two GPS coordinates in kilometers."""
+    lat1, lon1 = math.radians(coord1[0]), math.radians(coord1[1])
+    lat2, lon2 = math.radians(coord2[0]), math.radians(coord2[1])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    return 6371.0 * 2 * math.asin(math.sqrt(a))
+
+def calculate_route_distance(origin_str, dest_str):
+    """
+    Computes highway road distance between two typed locations:
+    1. Direct table match if available
+    2. Haversine aerial distance with 1.22x Indian national highway curvature factor
+    3. Safe default fallback
+    """
+    if not origin_str or not dest_str:
+        return 500.0
+    o = origin_str.strip().title()
+    d = dest_str.strip().title()
+    if o.lower() == d.lower():
+        return 15.0
+    if (o, d) in DEFAULT_CITY_DISTANCES:
+        return DEFAULT_CITY_DISTANCES[(o, d)]
+    if (d, o) in DEFAULT_CITY_DISTANCES:
+        return DEFAULT_CITY_DISTANCES[(d, o)]
+    c1 = resolve_city_coords(origin_str)
+    c2 = resolve_city_coords(dest_str)
+    if c1 and c2:
+        aerial = haversine_distance(c1, c2)
+        road_km = round(aerial * 1.22, 0)
+        return max(15.0, road_km)
+    return 500.0
+
 # -----------------------------------------------------------------------------
 # 4. Enterprise Top Header
 # -----------------------------------------------------------------------------
@@ -317,67 +415,68 @@ with col_form:
     with st.container(border=True):
         st.markdown("""
         <div class="section-title">SECTION A: Route & Transit Details</div>
-        <div class="section-desc">Defines pickup and delivery locations, lane distance, and estimated transit schedule to compute physical haul requirements.</div>
+        <div class="section-desc">Type pickup and delivery locations to automatically calculate line-haul distance and highway corridor transit metrics.</div>
         """, unsafe_allow_html=True)
         
         loc_c1, loc_c2 = st.columns(2)
         with loc_c1:
-            from_location = st.selectbox(
+            from_location = st.text_input(
                 "From Location (Origin Pickup Hub)",
-                options=MAJOR_INDIAN_CITIES,
-                index=MAJOR_INDIAN_CITIES.index("Ahmedabad"),
-                help="Select the pickup city or loading facility."
-            )
+                value="Ahmedabad",
+                placeholder="e.g. Ahmedabad, Surat, Vadodara, Delhi...",
+                help="Type the pickup city or loading facility name."
+            ).strip()
         with loc_c2:
-            default_dest_idx = MAJOR_INDIAN_CITIES.index("Mumbai") if from_location != "Mumbai" else MAJOR_INDIAN_CITIES.index("Delhi")
-            to_location = st.selectbox(
+            to_location = st.text_input(
                 "To Location (Destination Delivery Hub)",
-                options=MAJOR_INDIAN_CITIES,
-                index=default_dest_idx,
-                help="Select the drop-off city or warehouse destination."
-            )
+                value="Mumbai",
+                placeholder="e.g. Mumbai, Pune, Delhi, Bengaluru...",
+                help="Type the drop-off city or delivery warehouse name."
+            ).strip()
 
-        # City Validation: Prevent Selecting Same City
-        is_same_city = (from_location == to_location)
-        if is_same_city:
-            st.error("**Validation Alert:** Origin and Destination cannot be the same city. Please select different cities for inter-city transit.")
+        # Validation: Check if empty or same location
+        is_empty_location = not from_location or not to_location
+        is_same_city = (from_location.lower() == to_location.lower()) and not is_empty_location
+        
+        if is_empty_location:
+            st.warning("Please type both Origin and Destination locations.")
+        elif is_same_city:
+            st.error("**Validation Alert:** Origin and Destination cannot be the same city. Please enter different locations for inter-city freight transit.")
 
-        # Auto-suggest distance based on lane pair
-        pair = (from_location, to_location)
-        suggested_dist = DEFAULT_CITY_DISTANCES.get(pair, 1450.0)
-
-        trip_c1, trip_c2, trip_c3 = st.columns(3)
-        with trip_c1:
+        # Calculate Distance automatically from typed locations
+        auto_dist = calculate_route_distance(from_location, to_location)
+        
+        # Distance numerical input pre-populated with calculated distance
+        dist_c1, dist_c2 = st.columns([1.2, 1.0])
+        with dist_c1:
             distance = st.number_input(
                 "Distance (Km)",
-                min_value=10.0,
-                max_value=5000.0,
-                value=float(suggested_dist),
-                step=25.0,
-                help="One-way route distance in kilometers."
+                min_value=5.0,
+                max_value=6000.0,
+                value=float(auto_dist),
+                step=10.0,
+                help="Calculated highway route distance between locations (editable)."
             )
-        with trip_c2:
-            calc_days = max(1, int(round(distance / 350.0)))
-            transit_days = st.number_input(
-                "Transit Days",
-                min_value=1,
-                max_value=30,
-                value=calc_days,
-                step=1,
-                help="Committed line-haul transit duration."
-            )
-        with trip_c3:
-            created_date = st.date_input(
-                "Inquiry Date",
-                value=date.today(),
-                help="Date of freight inquiry for seasonal rate indexing."
-            )
+        with dist_c2:
+            st.markdown(f"""
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-top: 24px; text-align: center;">
+                <span style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; display: block;">Calculated Road Distance</span>
+                <span style="font-size: 18px; font-weight: 800; color: #1e40af;">{distance:,.0f} Km</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        # Automatic line-haul calculations (transit days and inquiry date are handled in background)
+        calc_days = max(1, int(round(distance / 350.0)))
+        transit_days = calc_days
+        created_date = date.today()
         
         # Active Route Banner (Strictly contained within Section A container)
+        from_display = from_location.title() if from_location else "Origin"
+        to_display = to_location.title() if to_location else "Destination"
         st.markdown(f"""
         <div class="corridor-banner">
             <div style="font-weight: 700; color: #1e40af; font-size: 13.5px; word-break: break-word;">
-                Corridor: {from_location} &nbsp;➔&nbsp; {to_location}
+                Corridor: {from_display} &nbsp;➔&nbsp; {to_display}
             </div>
             <div style="font-size: 12px; color: #2563eb; font-weight: 600; background: #ffffff; border: 1px solid #dbeafe; padding: 4px 10px; border-radius: 6px; white-space: nowrap;">
                 {distance:,.0f} Km &bull; {transit_days} Days Transit
@@ -469,7 +568,7 @@ with col_form:
         "Calculate Fair Market Rate & Generate Quotation",
         type="primary",
         use_container_width=True,
-        disabled=is_same_city
+        disabled=(is_same_city or is_empty_location)
     )
 
 # =============================================================================
@@ -483,8 +582,8 @@ with col_map:
         """, unsafe_allow_html=True)
         
         # Retrieve coordinates for origin and destination
-        origin_coords = CITY_COORDINATES.get(from_location, (23.0225, 72.5714))
-        dest_coords = CITY_COORDINATES.get(to_location, (19.0760, 72.8777))
+        origin_coords = resolve_city_coords(from_location) or (23.0225, 72.5714)
+        dest_coords = resolve_city_coords(to_location) or (19.0760, 72.8777)
         
         # Check if Google Maps API key is configured in environment
         gmaps_api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
@@ -508,28 +607,28 @@ with col_map:
             # 1. Origin Marker (Green Pickup Hub)
             folium.Marker(
                 location=origin_coords,
-                popup=folium.Popup(f"<b>Origin: {from_location}</b><br>Loading Terminal", max_width=200),
-                tooltip=f"Origin: {from_location}",
+                popup=folium.Popup(f"<b>Origin: {from_display}</b><br>Loading Terminal", max_width=200),
+                tooltip=f"Origin: {from_display}",
                 icon=folium.Icon(color="green", icon="play", prefix="fa")
             ).add_to(m)
             
             # 2. Destination Marker (Red Delivery Hub)
             folium.Marker(
                 location=dest_coords,
-                popup=folium.Popup(f"<b>Destination: {to_location}</b><br>Delivery Warehouse", max_width=200),
-                tooltip=f"Destination: {to_location}",
+                popup=folium.Popup(f"<b>Destination: {to_display}</b><br>Delivery Warehouse", max_width=200),
+                tooltip=f"Destination: {to_display}",
                 icon=folium.Icon(color="red", icon="flag", prefix="fa")
             ).add_to(m)
             
             # 3. Route Line (Connecting Source & Destination)
-            if not is_same_city:
+            if not is_same_city and not is_empty_location:
                 folium.PolyLine(
                     locations=[origin_coords, dest_coords],
                     color="#2563eb",
                     weight=4.5,
                     opacity=0.85,
                     dash_array="8, 6",
-                    tooltip=f"Transit Route: {from_location} ➔ {to_location} ({distance:,.0f} Km)"
+                    tooltip=f"Transit Route: {from_display} ➔ {to_display} ({distance:,.0f} Km)"
                 ).add_to(m)
                 
                 # Fit map view bounds dynamically to fit both markers
@@ -544,7 +643,7 @@ with col_map:
     <div class="route-summary-card">
         <div class="route-header-tag">Corridor Intelligence Summary</div>
         <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">
-            {from_location} &nbsp;➔&nbsp; {to_location}
+            {from_display} &nbsp;➔&nbsp; {to_display}
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div style="background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
@@ -573,11 +672,11 @@ with col_map:
 # =============================================================================
 # BOTTOM SECTION: ML PREDICTION & FORMAL FREIGHT QUOTATION
 # =============================================================================
-if calc_button and not is_same_city:
+if calc_button and not is_same_city and not is_empty_location:
     # 1. Capture Raw Inquiry (Includes From_Location & To_Location)
     raw_input = {
-        "From_Location": from_location,
-        "To_Location": to_location,
+        "From_Location": from_display,
+        "To_Location": to_display,
         "Vehicle_Category": vehicle_cat,
         "Vehicle_Length": length,
         "Vehicle_Height": height,
@@ -618,7 +717,7 @@ if calc_button and not is_same_city:
     daily_intensity = round(distance / max(1, transit_days), 1)
     
     # Generate Unique Quotation Reference ID
-    quote_hash = hashlib.md5(f"{from_location}{to_location}{datetime.now()}".encode()).hexdigest()[:6].upper()
+    quote_hash = hashlib.md5(f"{from_display}{to_display}{datetime.now()}".encode()).hexdigest()[:6].upper()
     quote_ref = f"QT-{datetime.now().year}-{quote_hash}"
     
     # 6. Render Industry Freight Quotation Result
@@ -637,7 +736,7 @@ if calc_button and not is_same_city:
         <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; box-sizing: border-box; width: 100%; max-width: 100%; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
                 <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #2563eb; letter-spacing: 0.5px; margin-bottom: 2px;">Transit Route Corridor</div>
-                <div style="font-size: 15.5px; font-weight: 800; color: #1e40af;">{from_location} &nbsp;➔&nbsp; {to_location}</div>
+                <div style="font-size: 15.5px; font-weight: 800; color: #1e40af;">{from_display} &nbsp;➔&nbsp; {to_display}</div>
             </div>
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 <div style="background: #ffffff; padding: 6px 12px; border-radius: 6px; border: 1px solid #dbeafe; text-align: center;">
@@ -698,7 +797,7 @@ if calc_button and not is_same_city:
                 "Diesel Price Benchmark"
             ],
             "Value": [
-                from_location, to_location, f"{distance:,.0f} Km", 
+                from_display, to_display, f"{distance:,.0f} Km", 
                 f"{transit_days} Days", f"{vehicle_cat} ({capacity} MT Capacity)", f"{length:.0f}' x {height:.0f}' x {width:.0f}'",
                 f"{calc_volume:,.1f} cu.ft.", f"{quantity} {uom}", vendor_name, 
                 f"₹{fuel_price:.2f} / Ltr"
@@ -725,8 +824,8 @@ if calc_button and not is_same_city:
         csv_export = pd.DataFrame([{
             "Quote_Reference": quote_ref,
             "Quote_Date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "Origin": from_location,
-            "Destination": to_location,
+            "Origin": from_display,
+            "Destination": to_display,
             "Distance_Km": distance,
             "Transit_Days": transit_days,
             "Vehicle_Category": vehicle_cat,
