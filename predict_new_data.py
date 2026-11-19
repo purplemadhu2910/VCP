@@ -1,6 +1,5 @@
 """
 STAGE 10: PREDICTION ON NEW INPUT DATA
-Project: Vehicle Transportation Unit Rate Prediction (L&T)
 Target (Y): Vehicle_Unit_Rate
 """
 
@@ -20,7 +19,6 @@ training_cols = pd.read_csv(TRAIN_SCHEMA_PATH, nrows=1).columns.tolist()
 print(f"✓ Loaded Champion Model: {type(model).__name__}")
 print(f"✓ Training Schema loaded: Expecting {len(training_cols)} features.")
 
-# 2. Define New Raw Trip Inquiries (Simulating real-world L&T requests)
 new_trips = [
     {
         "Trip_ID": "TRIP-2026-001 (Standard Full Truckload)",

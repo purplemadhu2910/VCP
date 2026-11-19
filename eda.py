@@ -1,6 +1,5 @@
 """
 STAGE 2: EXPLORATORY DATA ANALYSIS (EDA)
-Project: Vehicle Transportation Unit Rate Prediction (L&T)
 Target (Y): Vehicle_Unit_Rate
 """
 

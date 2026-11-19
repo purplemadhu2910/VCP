@@ -1,6 +1,5 @@
 """
 STAGE 8: MODEL EVALUATION
-Project: Vehicle Transportation Unit Rate Prediction (L&T)
 Target (Y): Vehicle_Unit_Rate
 """
 

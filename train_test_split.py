@@ -1,6 +1,5 @@
 """
 STAGE 6: TRAIN-TEST SPLIT
-Project: Vehicle Transportation Unit Rate Prediction (L&T)
 Target (Y): Vehicle_Unit_Rate
 """
 
