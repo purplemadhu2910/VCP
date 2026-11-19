@@ -470,19 +470,9 @@ with col_form:
         transit_days = calc_days
         created_date = date.today()
         
-        # Active Route Banner (Strictly contained within Section A container)
+        # Standardized location labels
         from_display = from_location.title() if from_location else "Origin"
         to_display = to_location.title() if to_location else "Destination"
-        st.markdown(f"""
-        <div class="corridor-banner">
-            <div style="font-weight: 700; color: #1e40af; font-size: 13.5px; word-break: break-word;">
-                Corridor: {from_display} &nbsp;➔&nbsp; {to_display}
-            </div>
-            <div style="font-size: 12px; color: #2563eb; font-weight: 600; background: #ffffff; border: 1px solid #dbeafe; padding: 4px 10px; border-radius: 6px; white-space: nowrap;">
-                {distance:,.0f} Km &bull; {transit_days} Days Transit
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
     
     # --- SECTION B: VEHICLE & CARGO SPECIFICATIONS ---
     with st.container(border=True):
