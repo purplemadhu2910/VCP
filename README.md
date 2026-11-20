@@ -10,6 +10,7 @@
 An end-to-end Machine Learning regression engine and interactive geographic corridor portal developed to predict the **fair baseline transportation unit rate** (`Vehicle_Unit_Rate`) for commercial freight operations across India.
 
 Trained and evaluated on **10,000 real-world freight trips**, the system automates commercial freight rate benchmarking, detects vendor overcharging, factors in Over-Dimensional Cargo (ODC) regulatory surcharges, and visualizes inter-state freight transit corridors on an interactive GIS map.
+Live Link: **https://cvturp.streamlit.app/**
 
 ---
 
